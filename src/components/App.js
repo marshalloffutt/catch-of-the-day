@@ -4,18 +4,52 @@ import Order from "./Order";
 import Inventory from "./Inventory";
 import sampleFishes from '../sample-fishes';
 import Fish from './Fish';
+import base from '../base';
 
 class App extends React.Component {
   state = {
     fishes: {},
     order: {}
   };
+
+  componentDidMount() {
+    const { params } = this.props.match;
+    // first reinstate our localstorage
+    const localStorageRef = localStorage.getItem(params.storeId);
+    if(localStorageRef) {
+      this.setState({ order: JSON.parse(localStorageRef) })
+    }
+    this.ref = base.syncState(`${params.storeId}/fishes`, {
+      context: this,
+      state: 'fishes'
+    });
+  }
+
+  componentDidUpdate() {
+    console.log(this.state.order);
+    localStorage.setItem(this.props.match.params.storeId, JSON.stringify(this.state.order));
+    console.log('it updated')
+  }
+
+  componentWillUnmount() {
+    base.removeBinding(this.ref);
+  }
+
   addFish = fish => {
     // 1. Take a copy of the existing state
     const fishes = {...this.state.fishes};
     // 2. Add our new fish to that fishes variable
     fishes[`fish${Date.now()}`] = fish;
     // 3. Set the new fishes object to state
+    this.setState({ fishes });
+  };
+
+  updateFish = (key, updatedFish) => {
+    // 1. Take a copy of the current state
+    const fishes = { ...this.state.fishes };
+    // 2. Update that state
+    fishes[key] = updatedFish;
+    //3. Set to state
     this.setState({ fishes });
   };
 
@@ -54,7 +88,9 @@ class App extends React.Component {
         />
         <Inventory
           addFish={this.addFish}
+          updateFish={this.updateFish}
           loadSampleFishes={this.loadSampleFishes}
+          fishes={this.state.fishes}
         />
       </div>
     );
